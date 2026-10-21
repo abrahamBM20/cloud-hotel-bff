@@ -1,0 +1,52 @@
+package com.hotel.bff.rooms;
+
+import com.hotel.bff.rooms.dto.RoomDto;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RestClient;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+
+/**
+ * Agregador del catálogo de habitaciones: el BFF delega en ms-hotel-rooms
+ * y devuelve su JSON tal cual, sin tocar la base de datos de habitaciones.
+ */
+@Service
+public class RoomService {
+
+    private final RestClient roomsClient;
+
+    public RoomService(RestClient roomsClient) {
+        this.roomsClient = roomsClient;
+    }
+
+    public List<RoomDto> getAll() {
+        RoomDto[] rooms = roomsClient.get()
+                .uri("/api/v1/rooms")
+                .retrieve()
+                .body(RoomDto[].class);
+        return rooms == null ? List.of() : Arrays.asList(rooms);
+    }
+
+    public Optional<RoomDto> getById(String id) {
+        try {
+            RoomDto room = roomsClient.get()
+                    .uri("/api/v1/rooms/{id}", id)
+                    .retrieve()
+                    .body(RoomDto.class);
+            return Optional.ofNullable(room);
+        } catch (HttpClientErrorException.NotFound e) {
+            return Optional.empty();
+        }
+    }
+
+    /** Busca una habitación por su número. Lo usa la validación de reservas. */
+    public Optional<RoomDto> findByRoomNumber(String roomNumber) {
+        return getAll().stream()
+                .filter(room -> room.roomNumber() != null
+                        && room.roomNumber().equalsIgnoreCase(roomNumber.trim()))
+                .findFirst();
+    }
+}
