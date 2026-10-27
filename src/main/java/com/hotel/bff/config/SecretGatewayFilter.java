@@ -25,7 +25,8 @@ public class SecretGatewayFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        return "/api/health".equals(request.getRequestURI());
+        return "OPTIONS".equalsIgnoreCase(request.getMethod())
+                || "/api/health".equals(request.getRequestURI());
     }
 
     @Override
