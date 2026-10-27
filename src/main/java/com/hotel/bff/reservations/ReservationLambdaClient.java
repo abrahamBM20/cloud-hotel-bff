@@ -1,6 +1,7 @@
 package com.hotel.bff.reservations;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hotel.bff.reservations.dto.ReservationResponseDto;
 import org.springframework.beans.factory.annotation.Value;
@@ -51,34 +52,43 @@ public class ReservationLambdaClient {
         event.put("queryStringParameters", filters);
         event.put("isBase64Encoded", false);
 
-        LambdaInvocationResponse raw = lambdaClient.post()
+        String rawResponse = lambdaClient.post()
                 .uri(lambdaUrl)
                 .contentType(MediaType.APPLICATION_JSON)
                 .header("X-Internal-Query-Token", queryToken)
                 .body(event)
                 .retrieve()
-                .body(LambdaInvocationResponse.class);
+                .body(String.class);
 
-        if (raw == null) {
+        if (rawResponse == null || rawResponse.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
                     "La Lambda de reservas no devolvió respuesta");
         }
-        if (raw.statusCode() == null || raw.statusCode() < 200 || raw.statusCode() >= 300) {
-            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
-                    "La Lambda de reservas respondió HTTP " + raw.statusCode() + ": " + raw.body());
-        }
 
         try {
-            return objectMapper.readValue(raw.body() == null ? "[]" : raw.body(),
+            JsonNode response = objectMapper.readTree(rawResponse);
+            String body = rawResponse;
+
+            // Una Function URL devuelve directamente el body de la Lambda.
+            // Una invocación directa puede devolver la envoltura AWS_PROXY.
+            if (response.isObject() && response.has("statusCode")) {
+                int statusCode = response.path("statusCode").asInt(500);
+                if (statusCode < 200 || statusCode >= 300) {
+                    throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
+                            "La Lambda de reservas respondió HTTP " + statusCode
+                                    + ": " + response.path("body").asText());
+                }
+                body = response.path("body").asText("[]");
+            }
+
+            return objectMapper.readValue(body,
                     new TypeReference<List<ReservationResponseDto>>() {
                     });
+        } catch (ResponseStatusException e) {
+            throw e;
         } catch (Exception e) {
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
                     "No se pudo interpretar el JSON de la Lambda de reservas", e);
         }
-    }
-
-    /** Envoltura de la respuesta AWS_PROXY de la Function URL. */
-    record LambdaInvocationResponse(Integer statusCode, String body) {
     }
 }

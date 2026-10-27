@@ -101,8 +101,7 @@ jobs:
 
             sudo docker run -d \
               --name ${{ env.CONTAINER_NAME }} \
-              --add-host=host.docker.internal:host-gateway \
-              -p 8080:8080 \
+              --network host \
               -e PORT=8080 \
               -e PUBLIC_HOST_URL="http://$TARGET_HOST_IP:8080" \
               -e COGNITO_ISSUER_URI='${{ secrets.COGNITO_ISSUER_URI }}' \
@@ -111,7 +110,7 @@ jobs:
               -e SNS_RESERVATION_TOPIC_ARN='${{ secrets.SNS_RESERVATION_TOPIC_ARN }}' \
               -e RESERVATIONS_LAMBDA_URL='${{ secrets.RESERVATIONS_LAMBDA_URL }}' \
               -e RESERVATIONS_QUERY_TOKEN='${{ secrets.RESERVATIONS_QUERY_TOKEN }}' \
-              -e ROOMS_SERVICE_URL='http://host.docker.internal:80' \
+              -e ROOMS_SERVICE_URL='http://localhost:80' \
               --restart unless-stopped \
               ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
 
