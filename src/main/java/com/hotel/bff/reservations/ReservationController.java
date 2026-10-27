@@ -36,7 +36,7 @@ public class ReservationController {
      * guarda la reserva. La lectura posterior la resuelve la Lambda reservation-query.
      */
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'RECEPCIONISTA', 'HUESPED')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ReservationResponseDto> create(@AuthenticationPrincipal Jwt jwt,
                                                           @Valid @RequestBody ReservationRequestDto request) {
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(reservationService.request(jwt, request));
