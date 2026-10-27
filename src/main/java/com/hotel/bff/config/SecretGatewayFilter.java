@@ -26,7 +26,11 @@ public class SecretGatewayFilter extends OncePerRequestFilter {
         String path = request.getRequestURI();
         return "OPTIONS".equalsIgnoreCase(request.getMethod())
                 || "/api/health".equals(path)
-                || path.startsWith("/api/v1/reservations");
+                || isReservationEndpoint(path);
+    }
+
+    private boolean isReservationEndpoint(String path) {
+        return path.matches("(/api)?/v1/reservations(/.*)?");
     }
 
     @Override
