@@ -4,6 +4,7 @@ import com.hotel.bff.rooms.dto.RoomDto;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
+import com.hotel.bff.rooms.dto.RoomRequestDto;
 
 import java.util.Arrays;
 import java.util.List;
@@ -48,5 +49,28 @@ public class RoomService {
                 .filter(room -> room.roomNumber() != null
                         && room.roomNumber().equalsIgnoreCase(roomNumber.trim()))
                 .findFirst();
+    }
+
+    public RoomDto create(RoomRequestDto request) {
+        return roomsClient.post()
+                .uri("/api/v1/rooms")
+                .body(request)
+                .retrieve()
+                .body(RoomDto.class);
+    }
+
+    public RoomDto update(String id, RoomRequestDto request) {
+        return roomsClient.put()
+                .uri("/api/v1/rooms/{id}", id)
+                .body(request)
+                .retrieve()
+                .body(RoomDto.class);
+    }
+
+    public void delete(String id) {
+        roomsClient.delete()
+                .uri("/api/v1/rooms/{id}", id)
+                .retrieve()
+                .toBodilessEntity();
     }
 }

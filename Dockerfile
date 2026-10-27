@@ -9,7 +9,7 @@ COPY build/libs/*.jar app.jar
 RUN useradd -m springuser && chown -R springuser /app
 USER springuser
 
-# Exponer el puerto de producción (80)
-EXPOSE 80
+# Exponer el puerto del BFF
+EXPOSE 8080
 
 ENTRYPOINT ["java", "-jar", "app.jar"]
