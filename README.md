@@ -115,6 +115,7 @@ El claim `cognito:groups` se convierte en roles (`ROLE_ADMIN`, `ROLE_RECEPCIONIS
 | Endpoint | ADMIN | RECEPCIONISTA | HUESPED |
 |---|---|---|---|
 | `GET /api/v1/rooms/**` | sí | sí | sí (público) |
+| `POST/PUT/DELETE /api/v1/rooms/**` | sí | no | no |
 | `GET /api/v1/reservations` | todas | todas | **solo las suyas** |
 | `POST /api/v1/reservations` | sí | sí | sí |
 | `PATCH .../status` | sí | sí | no |
@@ -129,9 +130,8 @@ huésped no puede leer reservas ajenas aunque manipule los query params.
 | Variable | Para qué | Default |
 |---|---|---|
 | `PORT` | Puerto del contenedor | `8080` |
-| `DB_URL`, `DB_USER`, `DB_PASSWORD` | PostgreSQL (crea la tabla `reservations`) | — (obligatorio) |
+| `RESERVATIONS_QUERY_TOKEN` | Token interno BFF → `reservation-query` | — (obligatorio) |
 | `API_GATEWAY_SECRET` | Secreto de la cabecera `X-Secret-Gateway` | — (obligatorio) |
-| `ROOMS_GATEWAY_SECRET` | Secreto que el BFF envía a `ms-hotel-rooms` | el mismo `API_GATEWAY_SECRET` |
 | `COGNITO_ISSUER_URI` | Pool de Cognito que valida el JWT | `us-east-1_rf0QM9OSc` |
 | `SNS_RESERVATION_TOPIC_ARN` | Topic SNS de reservas | — (obligatorio) |
 | `AWS_REGION` | Región de AWS | `us-east-1` |
@@ -154,26 +154,17 @@ Las variables sin default son **obligatorias**: la aplicación no arranca sin el
 ## Seguridad: las dos capas
 
 ```
-internet ──▶ API Gateway ──X-Secret-Gateway──▶ cloud-hotel-bff ──X-Secret-Gateway──▶ ms-hotel-rooms
+internet ──▶ API Gateway ──X-Secret-Gateway──▶ cloud-hotel-bff ──▶ ms-hotel-rooms (red privada)
 ```
 
 1. **Capa principal — la red.** `ms-hotel-rooms` **no tiene ruta propia en el API
    Gateway**. Solo el BFF llega a él, por red interna. Nadie entra por internet
    al microservicio.
-2. **Capa añadida — el secreto.** La cabecera `X-Secret-Gateway` se valida en los
-   dos saltos de la cadena: `API Gateway → BFF` y `BFF → ms-hotel-rooms`. Si
-   alguien salta el API Gateway y llama al BFF directamente, recibe 403.
+2. **Capa añadida — el secreto.** La cabecera `X-Secret-Gateway` se valida en
+   el BFF. Si alguien salta el API Gateway y llama al BFF directamente, recibe 403.
 
-El secreto **no** protege a las Lambdas: la Function URL de `reservation-query`
-va con `--auth-type NONE` y es pública por diseño del proyecto.
-
-Detalle importante: el BFF **no reenvía la cabecera que recibe**, reenvía la
-suya. Si reenviara la del cliente, un atacante podría inyectar un
-`X-Secret-Gateway` y hacerse pasar por el gateway frente a `ms-hotel-rooms`.
-
-Para aislar todavía más, define `ROOMS_GATEWAY_SECRET` con un valor **distinto**
-al del API Gateway: así, comprometer el secreto del gateway no da acceso
-directo al microservicio.
+La Function URL de `reservation-query` exige además `X-Internal-Query-Token`.
+Ese token solo vive en el BFF y en la Lambda; nunca se compila en Vercel.
 
 ---
 

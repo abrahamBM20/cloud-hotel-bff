@@ -30,6 +30,7 @@ repositories {
 
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-webmvc'
+    implementation 'org.springframework.boot:spring-boot-starter-json'
     testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
@@ -39,19 +40,14 @@ dependencies {
     // 2. JWT: validación del token de Cognito (OAuth2 Resource Server)
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
 
-    // 3. DB: el BFF es dueño del esquema de 'reservations' (ddl-auto=update la crea)
-    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-    runtimeOnly 'org.postgresql:postgresql'
-
-    // 4. Validaciones de los DTOs de entrada
+    // Validaciones de los DTOs de entrada
     implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'com.fasterxml.jackson.core:jackson-databind'
 
-    // 5. SNS: publica las solicitudes de reserva (SNS hotel-reservation-events
+    // SNS: publica las solicitudes de reserva (SNS hotel-reservation-events
     //    -> SQS -> Lambda reservation-recorder). El BOM de AWS SDK v2 ya está importado arriba.
     implementation 'software.amazon.awssdk:sns'
 
-    // 6. JSON para serializar el mensaje SNS
-    implementation 'com.fasterxml.jackson.core:jackson-databind'
 }
 
 tasks.named('test') {

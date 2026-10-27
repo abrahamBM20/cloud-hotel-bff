@@ -27,13 +27,16 @@ public class ReservationLambdaClient {
 
     private final RestClient lambdaClient;
     private final String lambdaUrl;
+    private final String queryToken;
     private final ObjectMapper objectMapper;
 
     public ReservationLambdaClient(RestClient reservationsLambdaClient,
                                    @Value("${app.lambda.reservations.url}") String lambdaUrl,
+                                   @Value("${app.lambda.query-token}") String queryToken,
                                    ObjectMapper objectMapper) {
         this.lambdaClient = reservationsLambdaClient;
         this.lambdaUrl = lambdaUrl;
+        this.queryToken = queryToken;
         this.objectMapper = objectMapper;
     }
 
@@ -51,6 +54,7 @@ public class ReservationLambdaClient {
         LambdaInvocationResponse raw = lambdaClient.post()
                 .uri(lambdaUrl)
                 .contentType(MediaType.APPLICATION_JSON)
+                .header("X-Internal-Query-Token", queryToken)
                 .body(event)
                 .retrieve()
                 .body(LambdaInvocationResponse.class);
