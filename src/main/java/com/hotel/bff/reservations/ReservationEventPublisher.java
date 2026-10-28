@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import software.amazon.awssdk.services.sns.SnsClient;
+import software.amazon.awssdk.services.sns.model.MessageAttributeValue;
 import software.amazon.awssdk.services.sns.model.PublishRequest;
 
 import java.math.BigDecimal;
@@ -87,6 +88,15 @@ public class ReservationEventPublisher {
             return snsClient.publish(PublishRequest.builder()
                             .topicArn(topicArn)
                             .message(message)
+                            // Las suscripciones SNS existentes pueden filtrar por
+                            // MessageAttributes (el comportamiento predeterminado).
+                            // El tipo también permanece dentro del JSON para que la
+                            // Lambda pueda validarlo al recibir el mensaje.
+                            .messageAttributes(Map.of(
+                                    "type", MessageAttributeValue.builder()
+                                            .dataType("String")
+                                            .stringValue(type)
+                                            .build()))
                             .build())
                     .messageId();
         } catch (Exception e) {
