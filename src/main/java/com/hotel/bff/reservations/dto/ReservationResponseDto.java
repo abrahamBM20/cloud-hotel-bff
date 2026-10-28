@@ -5,8 +5,8 @@ import java.time.Instant;
 import java.time.LocalDate;
 
 /**
- * Lo que el frontend recibe del BFF. Es el mismo JSON que devuelve la Lambda
- * 'reservation-query': el BFF no transforma los datos, solo los reenvía.
+ * Lo que el frontend recibe del BFF. El BFF conserva el contrato y delega
+ * la lectura síncrona a ms-hotel-rooms.
  */
 public record ReservationResponseDto(
         String id,
