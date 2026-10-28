@@ -108,8 +108,6 @@ jobs:
               -e API_GATEWAY_SECRET='${{ secrets.API_GATEWAY_SECRET }}' \
               -e AWS_REGION='${{ secrets.AWS_REGION }}' \
               -e SNS_RESERVATION_TOPIC_ARN='${{ secrets.SNS_RESERVATION_TOPIC_ARN }}' \
-              -e RESERVATIONS_LAMBDA_URL='${{ secrets.RESERVATIONS_LAMBDA_URL }}' \
-              -e RESERVATIONS_QUERY_TOKEN='${{ secrets.RESERVATIONS_QUERY_TOKEN }}' \
               -e ROOMS_SERVICE_URL='http://localhost:80' \
               --restart unless-stopped \
               ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest

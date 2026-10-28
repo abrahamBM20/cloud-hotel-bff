@@ -26,7 +26,7 @@ Modelado sobre `cloud-chati-bff`.
 │ cloud-hotel-bff                                          │
 │                                                          │
 │  GET  /api/v1/rooms            ──▶ ms-hotel-rooms      │
-│  GET  /api/v1/reservations     ──▶ Lambda reservation-query (Function URL)
+│  GET  /api/v1/reservations     ──▶ ms-hotel-rooms (consulta síncrona)
 │  POST /api/v1/reservations     ──▶ SNS ─▶ SQS ─▶ Lambda reservation-recorder
 │  PATCH /api/v1/reservations/{id}/status ─▶ SNS ─▶ SQS ─▶ Lambda reservation-status-updater
 └──────────────────────────────────────────────────────────┘
@@ -37,7 +37,7 @@ Modelado sobre `cloud-chati-bff`.
 | Catálogo de habitaciones | `ms-hotel-rooms` (microservicio) | El BFF solo agrega y reenvía su JSON |
 | Crear una reserva | Lambda `reservation-recorder` | Escritura asíncrona: SNS → SQS → Lambda |
 | Cambiar el estado | Lambda `reservation-status-updater` | Idem, encolado |
-| **Leer** las reservas | Lambda `reservation-query` | El BFF invoca su Function URL y devuelve el JSON tal cual |
+| **Leer** las reservas | `ms-hotel-rooms` | El BFF delega la consulta síncrona a la tabla compartida |
 | Validación de la reserva | BFF | Falla rápido con 400/404/409, sin gastar un mensaje de SQS |
 | Avisos al hotel | Lambda `notifier.js` | Publica en la API de notificaciones |
 
@@ -57,7 +57,7 @@ El BFF delega en `ms-hotel-rooms` con `RestClient` y le pasa la cabecera `X-Secr
 ### Reservas
 
 ```
-GET   /api/v1/reservations                     → listado (lo resuelve la Lambda de lectura)
+GET /api/v1/reservations                     → listado (lo resuelve ms-hotel-rooms)
 GET   /api/v1/reservations/{id}                → una reserva
 POST  /api/v1/reservations                     → crea la reserva        → 202 Accepted
 PATCH /api/v1/reservations/{id}/status         → check-in / check-out / cancelación → 202 Accepted
@@ -130,12 +130,10 @@ huésped no puede leer reservas ajenas aunque manipule los query params.
 | Variable | Para qué | Default |
 |---|---|---|
 | `PORT` | Puerto del contenedor | `8080` |
-| `RESERVATIONS_QUERY_TOKEN` | Token interno BFF → `reservation-query` | — (obligatorio) |
 | `API_GATEWAY_SECRET` | Secreto de la cabecera `X-Secret-Gateway` | — (obligatorio) |
 | `COGNITO_ISSUER_URI` | Pool de Cognito que valida el JWT | `us-east-1_rf0QM9OSc` |
 | `SNS_RESERVATION_TOPIC_ARN` | Topic SNS de reservas | — (obligatorio) |
 | `AWS_REGION` | Región de AWS | `us-east-1` |
-| `RESERVATIONS_LAMBDA_URL` | Function URL de `reservation-query` | — (obligatorio) |
 | `ROOMS_SERVICE_URL` | URL de `ms-hotel-rooms` | — (obligatorio) |
 | `PUBLIC_HOST_URL` | Host público (informativo) | `http://localhost:8080` |
 
@@ -163,8 +161,9 @@ internet ──▶ API Gateway ──X-Secret-Gateway──▶ cloud-hotel-bff �
 2. **Capa añadida — el secreto.** La cabecera `X-Secret-Gateway` se valida en
    el BFF. Si alguien salta el API Gateway y llama al BFF directamente, recibe 403.
 
-La Function URL de `reservation-query` exige además `X-Internal-Query-Token`.
-Ese token solo vive en el BFF y en la Lambda; nunca se compila en Vercel.
+La consulta de reservas no expone la base de datos ni una Function URL: el BFF la
+delega por la red privada de EC2 al microservicio, y el token de Cognito nunca se
+compila en Vercel.
 
 ---
 

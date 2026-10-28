@@ -1,6 +1,7 @@
 package com.hotel.bff.rooms;
 
 import com.hotel.bff.rooms.dto.RoomDto;
+import com.hotel.bff.reservations.dto.ReservationResponseDto;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
@@ -49,6 +50,22 @@ public class RoomService {
                 .filter(room -> room.roomNumber() != null
                         && room.roomNumber().equalsIgnoreCase(roomNumber.trim()))
                 .findFirst();
+    }
+
+    public List<ReservationResponseDto> getReservations(String status, String roomNumber,
+                                                        String guestId, String id, Integer limit) {
+        ReservationResponseDto[] reservations = roomsClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/api/v1/reservations")
+                        .queryParamIfPresent("status", Optional.ofNullable(status))
+                        .queryParamIfPresent("roomNumber", Optional.ofNullable(roomNumber))
+                        .queryParamIfPresent("guestId", Optional.ofNullable(guestId))
+                        .queryParamIfPresent("id", Optional.ofNullable(id))
+                        .queryParamIfPresent("limit", Optional.ofNullable(limit))
+                        .build())
+                .retrieve()
+                .body(ReservationResponseDto[].class);
+        return reservations == null ? List.of() : Arrays.asList(reservations);
     }
 
     public RoomDto create(RoomRequestDto request) {
