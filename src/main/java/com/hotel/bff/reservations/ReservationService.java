@@ -27,14 +27,11 @@ public class ReservationService {
     private static final int MAX_LIMIT = 500;
 
     private final ReservationEventPublisher reservationEventPublisher;
-    private final ReservationLambdaClient reservationLambdaClient;
     private final RoomService roomService;
 
     public ReservationService(ReservationEventPublisher reservationEventPublisher,
-                              ReservationLambdaClient reservationLambdaClient,
                               RoomService roomService) {
         this.reservationEventPublisher = reservationEventPublisher;
-        this.reservationLambdaClient = reservationLambdaClient;
         this.roomService = roomService;
     }
 
@@ -107,7 +104,7 @@ public class ReservationService {
     }
 
     /**
-     * Lista las reservas. Los filtros opcionales se pasan a la Lambda 'reservation-query'.
+     * Lista las reservas. Los filtros opcionales se pasan a ms-hotel-rooms.
      * Un huésped que no es staff solo ve las suyas.
      */
     public List<ReservationResponseDto> list(Jwt jwt, String status, String roomNumber,
@@ -133,7 +130,12 @@ public class ReservationService {
         }
         filters.put("limit", String.valueOf(resolveLimit(limit)));
 
-        return reservationLambdaClient.findReservations(filters);
+        return roomService.getReservations(
+                filters.get("status"),
+                filters.get("roomNumber"),
+                filters.get("guestId"),
+                filters.get("id"),
+                resolveLimit(limit));
     }
 
     private int resolveLimit(Integer limit) {

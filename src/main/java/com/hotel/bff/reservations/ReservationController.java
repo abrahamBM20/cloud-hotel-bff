@@ -33,7 +33,7 @@ public class ReservationController {
 
     /**
      * 202: aceptado. SNS hotel-reservation-events -> SQS -> Lambda reservation-recorder
-     * guarda la reserva. La lectura posterior la resuelve la Lambda reservation-query.
+     * guarda la reserva. La lectura posterior la resuelve ms-hotel-rooms de forma síncrona.
      */
     @PostMapping
     @PreAuthorize("isAuthenticated()")
@@ -52,7 +52,7 @@ public class ReservationController {
                 .body(reservationService.changeStatus(jwt, id, request));
     }
 
-    /** Listado. La Lambda 'reservation-query' lee la tabla y devuelve el JSON. */
+    /** Listado síncrono delegado por el BFF a ms-hotel-rooms. */
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'RECEPCIONISTA', 'HUESPED')")
     public List<ReservationResponseDto> list(@AuthenticationPrincipal Jwt jwt,

@@ -8,7 +8,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  *
  * Es la única puerta de entrada del frontend:
  *   - Catálogo de habitaciones  -> delega en el microservicio ms-hotel-rooms.
- *   - Reservas (lectura)       -> invoca la Lambda 'reservation-query' (Function URL) y devuelve su JSON.
+ *   - Reservas (lectura)       -> delega síncronamente en ms-hotel-rooms.
  *   - Reservas (escritura)     -> publica en SNS; la Lambda 'reservation-recorder' (SQS) las persiste.
  */
 @SpringBootApplication
